@@ -9,6 +9,7 @@ import { Icon } from '@/components/icons';
 import { Button, Card, Choice, Field, FieldRow, Row, Screen, Text } from '@/components/ui';
 import { useT } from '@/lib/i18n';
 import { EVENT_NAMES, EVENTS, gpa4 } from '@/lib/schools';
+import { deletePhoto, uploadPhoto } from '@/lib/photos';
 import { useStore, type Profile } from '@/lib/store';
 import { Radius, useTheme } from '@/lib/theme';
 
@@ -29,6 +30,8 @@ function Photos({ kind }: { kind: 'track' | 'life' }) {
   const { t } = useT();
   const { c } = useTheme();
   const [denied, setDenied] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [failed, setFailed] = useState(false);
   const list = state.profile.photos[kind];
 
   async function add() {
@@ -41,11 +44,25 @@ function Photos({ kind }: { kind: 'track' | 'life' }) {
       quality: 0.7,
     });
     if (res.canceled) return;
-    const uris = res.assets.map((a) => a.uri);
+    setFailed(false);
+    let uris = res.assets.map((a) => a.uri);
+    const userId = state.userId;
+    if (userId && !state.demo) {
+      setBusy(true);
+      try {
+        uris = await Promise.all(res.assets.map((a) => uploadPhoto(userId, kind, a.uri, a.mimeType)));
+      } catch {
+        setFailed(true);
+        setBusy(false);
+        return;
+      }
+      setBusy(false);
+    }
     setProfile({ photos: { ...state.profile.photos, [kind]: [...list, ...uris].slice(0, MAX_PHOTOS) } });
   }
 
   function remove(i: number) {
+    deletePhoto(list[i]).catch(() => {});
     setProfile({ photos: { ...state.profile.photos, [kind]: list.filter((_, j) => j !== i) } });
   }
 
@@ -53,9 +70,10 @@ function Photos({ kind }: { kind: 'track' | 'life' }) {
     <View style={{ gap: 8 }}>
       <Row style={{ justifyContent: 'space-between', alignItems: 'center' }}>
         <Text kind="bold">{t(kind === 'track' ? 'ph_track' : 'ph_life')}</Text>
-        {list.length < MAX_PHOTOS && <Button small kind="outline" title={`+ ${t('ph_add')}`} onPress={add} />}
+        {list.length < MAX_PHOTOS && <Button small kind="outline" disabled={busy} title={busy ? t('uploading') : `+ ${t('ph_add')}`} onPress={add} />}
       </Row>
       {denied && <Text kind="small" color={c.warn}>{t('ph_denied')}</Text>}
+      {failed && <Text kind="small" color={c.warn}>{t('net_error')}</Text>}
       {list.length ? (
         <Row gap={8}>
           {list.map((uri, i) => (
@@ -78,7 +96,8 @@ function Photos({ kind }: { kind: 'track' | 'life' }) {
 }
 
 export default function ProfileScreen() {
-  const { state, set, setProfile, signOut } = useStore();
+  const { state, sync, set, setProfile, signOut } = useStore();
+  const { c } = useTheme();
   const { t, ev } = useT();
   const p = state.profile;
   const field = (k: keyof Profile) => ({
@@ -94,7 +113,9 @@ export default function ProfileScreen() {
       <View style={{ gap: 4 }}>
         <Text kind="display">{t('p_title')}</Text>
         <Text muted>{t('p_lead')}</Text>
-        <Text kind="small" muted>{t('saved')}</Text>
+        <Text kind="small" color={sync === 'error' ? c.warn : c.muted}>
+          {state.demo ? t('demo_note') : sync === 'saving' ? t('saving') : sync === 'error' ? t('save_error') : t('saved')}
+        </Text>
       </View>
 
       <Section title={t('h_personal')}>
@@ -231,8 +252,8 @@ export default function ProfileScreen() {
           kind="outline"
           title={t('sign_out')}
           style={{ alignSelf: 'flex-start' }}
-          onPress={() => {
-            signOut();
+          onPress={async () => {
+            await signOut();
             router.replace('/log-in');
           }}
         />

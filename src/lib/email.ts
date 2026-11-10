@@ -1,12 +1,18 @@
 import { formatMark, gpa4, parseMark, type School } from './schools';
-import { PROFILE_BASE_URL, slugFor, type Profile } from './store';
+import { SITE_URL } from './config';
+import { slugFor, type AppState, type Profile } from './store';
 
-export function profileUrl(p: Profile) {
-  return PROFILE_BASE_URL + slugFor(p.name);
+/** The athlete's coach link. */
+export function linkSlug(s: Pick<AppState, 'slug' | 'profile'>) {
+  return s.slug ?? slugFor(s.profile.name);
+}
+
+export function profileUrl(s: Pick<AppState, 'slug' | 'profile'>) {
+  return `${SITE_URL}/p/${linkSlug(s)}`;
 }
 
 /** The first email to a coach. Always in English, because U.S. coaches read English. */
-export function emailFor(s: School, p: Profile): { subject: string; body: string } {
+export function emailFor(s: School, p: Profile, url: string): { subject: string; body: string } {
   const bests = p.pbs.filter((pb) => !isNaN(parseMark(pb.ev, pb.mark)));
   const events = bests.map((pb) => pb.ev).join('/') || 'track';
   const lines = bests.map((pb) => `- ${pb.ev}: ${formatMark(pb.ev, parseMark(pb.ev, pb.mark))}${pb.meet ? ` (${pb.meet})` : ''}`);
@@ -17,7 +23,7 @@ export function emailFor(s: School, p: Profile): { subject: string; body: string
     '',
     `My name is ${p.name}. I am a ${events} athlete${p.country ? ` from ${p.country}` : ''}${p.grad ? `, graduating in ${p.grad}` : ''}, and I am very interested in ${s.name}.`,
     '',
-    `My profile, with race video, results and photos: ${profileUrl(p)}`,
+    `My profile, with race video, results and photos: ${url}`,
     '',
     ...(lines.length ? ['Personal bests:', ...lines, ''] : []),
     `Academics: ${g ? `GPA ${g.toFixed(2)} (U.S. 4.0 scale), ` : ''}English level ${p.english}${Number(p.sat) ? `, SAT ${p.sat}` : ''}.`,

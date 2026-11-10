@@ -1,7 +1,7 @@
 import { Image } from 'expo-image';
 import * as Linking from 'expo-linking';
 import { router, useLocalSearchParams } from 'expo-router';
-import type { ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Pressable, ScrollView, Text as RNText, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -10,23 +10,47 @@ import { Avatar, Badge, Button, Card, Row, Text } from '@/components/ui';
 import { useLayout } from '@/components/use-layout';
 import { useT } from '@/lib/i18n';
 import { formatMark, gpa4, parseMark } from '@/lib/schools';
-import { slugFor, useStore } from '@/lib/store';
+import { linkSlug } from '@/lib/email';
+import { emptyProfile, useStore, type Profile } from '@/lib/store';
+import { supabase } from '@/lib/supabase';
 import { Fonts, Radius, Space, useTheme } from '@/lib/theme';
 
 /**
- * The page a coach opens from the email link. For now it shows the profile saved on this device;
- * once online accounts exist it will load any athlete by their link.
+ * The page a coach opens from the email link. It loads the athlete's public profile by its link;
+ * the athlete themself sees their own latest version, even before it finishes saving.
  */
 export default function CoachProfile() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
   const { state } = useStore();
-  const { t, ev } = useT();
+  const { t } = useT();
   const { c } = useTheme();
-  const { wide } = useLayout();
-  const p = state.profile;
-  const found = p.name && slugFor(p.name) === slug;
+  const own = state.signedIn && !!state.profile.name && linkSlug(state) === slug;
+  const [remote, setRemote] = useState<Profile | null | 'loading'>(own ? null : 'loading');
 
-  if (!found) {
+  useEffect(() => {
+    if (own || !slug) return;
+    let alive = true;
+    supabase
+      .rpc('get_public_profile', { p_slug: slug })
+      .then(({ data, error }) => {
+        if (!alive) return;
+        const d = !error && data ? ((data as { data?: Partial<Profile> }).data ?? null) : null;
+        setRemote(d ? { ...emptyProfile(), ...d } : null);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [own, slug]);
+
+  if (own) return <CoachPage p={state.profile} preview />;
+  if (remote === 'loading') {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: c.bg, alignItems: 'center', justifyContent: 'center' }}>
+        <Text muted>{t('loading')}</Text>
+      </SafeAreaView>
+    );
+  }
+  if (!remote) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: c.bg, alignItems: 'center', justifyContent: 'center', padding: 24, gap: 12 }}>
         <Text kind="title">{t('not_found')}</Text>
@@ -36,6 +60,13 @@ export default function CoachProfile() {
     );
   }
 
+  return <CoachPage p={remote} />;
+}
+
+function CoachPage({ p, preview }: { p: Profile; preview?: boolean }) {
+  const { t, ev } = useT();
+  const { c } = useTheme();
+  const { wide } = useLayout();
   const bests = p.pbs.filter((pb) => !isNaN(parseMark(pb.ev, pb.mark)));
   const videos = p.videos.filter((v) => v.trim());
   const photos = [...p.photos.track, ...p.photos.life];
@@ -148,7 +179,7 @@ export default function CoachProfile() {
           </SafeAreaView>
         </View>
 
-        {state.signedIn && (
+        {preview && (
           <View style={{ backgroundColor: c.accentSoft, paddingVertical: 8, paddingHorizontal: 16, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 12 }}>
             <Text kind="small" color={c.accent} style={{ fontFamily: Fonts.semibold }}>{t('c_preview')}</Text>
             {router.canGoBack() && <Button small kind="outline" title={t('back')} onPress={() => router.back()} />}
