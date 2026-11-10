@@ -20,7 +20,7 @@ export default function Email() {
   const [to, setTo] = useState('');
   const [copied, setCopied] = useState<'link' | 'email' | null>(null);
   const school = schools.find((s) => s.id === schoolId) ?? schools[0];
-  const url = profileUrl(p);
+  const url = profileUrl(state);
 
   async function copy(text: string, what: 'link' | 'email') {
     await Clipboard.setStringAsync(text);
@@ -38,7 +38,7 @@ export default function Email() {
     });
   }
 
-  const mail = school ? emailFor(school, p) : null;
+  const mail = school ? emailFor(school, p, url) : null;
 
   return (
     <Screen>
@@ -50,7 +50,7 @@ export default function Email() {
       <View style={{ borderWidth: 1, borderColor: c.accent, backgroundColor: c.accentSoft, borderRadius: Radius.lg, padding: 16, gap: 8 }}>
         <Text kind="label">{t('link_lbl')}</Text>
         <Text kind="mono" selectable style={{ fontSize: 14 }}>{url}</Text>
-        <Text kind="small" muted>{`${t('link_note')} ${t('link_soon')}`}</Text>
+        <Text kind="small" muted>{t('link_note')}</Text>
         <Button small kind="outline" title={copied === 'link' ? t('copied') : t('copy_link')} onPress={() => copy(url, 'link')} style={{ alignSelf: 'flex-start' }} />
       </View>
 

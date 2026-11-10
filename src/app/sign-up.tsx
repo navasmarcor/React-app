@@ -2,11 +2,13 @@ import { Link, router } from 'expo-router';
 import { useState } from 'react';
 import { View } from 'react-native';
 
-import { AuthShell, OrDivider } from '@/components/auth-shell';
+import { AuthShell, Notice, OrDivider } from '@/components/auth-shell';
 import { SocialButtons } from '@/components/social';
 import { Button, Choice, Field, Text } from '@/components/ui';
+import { SITE_URL } from '@/lib/config';
 import { useT } from '@/lib/i18n';
 import { emptyProfile, exampleProfile, useStore, type Account } from '@/lib/store';
+import { supabase } from '@/lib/supabase';
 import { Fonts, useTheme } from '@/lib/theme';
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -14,36 +16,55 @@ const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export default function SignUp() {
   const { t } = useT();
   const { c } = useTheme();
-  const { state, set } = useStore();
+  const { set } = useStore();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<Account['role']>('athlete');
   const [errors, setErrors] = useState<{ name?: string; email?: string; password?: string }>({});
+  const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState<string>();
 
-  function create() {
+  async function create() {
     const e = {
       name: name.trim() ? undefined : t('need_name'),
       email: EMAIL.test(email.trim()) ? undefined : t('need_email'),
       password: password.length >= 8 ? undefined : t('need_password'),
     };
     setErrors(e);
+    setNotice(undefined);
     if (e.name || e.email || e.password) return;
-    const account = { name: name.trim(), email: email.trim().toLowerCase(), role };
-    const keep = state.account?.email === account.email;
+    const account: Account = { name: name.trim(), email: email.trim().toLowerCase(), role };
+    setBusy(true);
+    const { data, error } = await supabase.auth.signUp({
+      email: account.email,
+      password,
+      options: { data: { name: account.name, role }, emailRedirectTo: SITE_URL },
+    });
+    setBusy(false);
+    if (error) return setNotice(error.message || t('net_error'));
+    // Start this account with a fresh profile; the store loads anything already saved online.
     set({
       account,
-      signedIn: true,
-      profile: keep ? state.profile : emptyProfile(role === 'athlete' ? account.name : '', account.email),
-      ...(keep ? {} : { custom: [], outreach: {} }),
+      signedIn: !!data.session,
+      demo: false,
+      userId: null,
+      slug: null,
+      profile: emptyProfile(role === 'athlete' ? account.name : '', account.email),
+      custom: [],
+      outreach: {},
     });
-    router.replace('/home');
+    if (data.session) router.replace('/home');
+    else setNotice(t('check_email'));
   }
 
   function tryExample() {
     set({
       account: { name: exampleProfile.name, email: exampleProfile.email, role: 'athlete' },
       signedIn: true,
+      demo: true,
+      userId: null,
+      slug: null,
       profile: exampleProfile,
       custom: [],
       outreach: {},
@@ -83,7 +104,8 @@ export default function SignUp() {
           { value: 'parent', label: t('parent') },
         ]}
       />
-      <Button title={t('create_account')} onPress={create} style={{ marginTop: 4 }} />
+      {notice && <Notice text={notice} />}
+      <Button title={busy ? t('loading') : t('create_account')} disabled={busy} onPress={create} style={{ marginTop: 4 }} />
       <OrDivider />
       <SocialButtons />
       <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 4, flexWrap: 'wrap' }}>

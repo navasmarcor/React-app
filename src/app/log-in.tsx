@@ -5,25 +5,49 @@ import { Pressable, View } from 'react-native';
 import { AuthShell, Notice, OrDivider } from '@/components/auth-shell';
 import { SocialButtons } from '@/components/social';
 import { Button, Field, Text } from '@/components/ui';
+import { SITE_URL } from '@/lib/config';
 import { useT } from '@/lib/i18n';
 import { useStore } from '@/lib/store';
+import { supabase } from '@/lib/supabase';
 import { Fonts, useTheme } from '@/lib/theme';
+
+const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function LogIn() {
   const { t } = useT();
   const { c } = useTheme();
   const { state, set } = useStore();
-  const [email, setEmail] = useState(state.account?.email ?? '');
+  const [email, setEmail] = useState(state.demo ? '' : (state.account?.email ?? ''));
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string>();
-  const [forgot, setForgot] = useState(false);
+  const [notice, setNotice] = useState<string>();
+  const [busy, setBusy] = useState(false);
 
-  function logIn() {
+  async function logIn() {
+    setNotice(undefined);
+    if (!EMAIL.test(email.trim())) return setError(t('need_email'));
     if (password.length < 8) return setError(t('need_password'));
-    // Accounts live on this device until online accounts are added.
-    if (!state.account || state.account.email !== email.trim().toLowerCase()) return setError(t('wrong_login'));
-    set({ signedIn: true });
+    setError(undefined);
+    setBusy(true);
+    const { error: err } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
+    setBusy(false);
+    if (err) {
+      const code = (err as { code?: string }).code;
+      if (code === 'email_not_confirmed') return setError(t('confirm_first'));
+      if (code === 'invalid_credentials') return setError(t('wrong_login'));
+      return setError(err.message || t('net_error'));
+    }
+    set({ signedIn: true, demo: false });
     router.replace('/home');
+  }
+
+  async function forgot() {
+    setError(undefined);
+    if (!EMAIL.test(email.trim())) return setNotice(t('forgot_soon'));
+    const { error: err } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
+      redirectTo: `${SITE_URL}/new-password`,
+    });
+    setNotice(err ? err.message || t('net_error') : t('reset_sent'));
   }
 
   return (
@@ -50,11 +74,11 @@ export default function LogIn() {
         error={error}
         onSubmitEditing={logIn}
       />
-      <Pressable onPress={() => setForgot(true)} style={{ alignSelf: 'flex-end' }} accessibilityRole="button">
+      <Pressable onPress={forgot} style={{ alignSelf: 'flex-end' }} accessibilityRole="button">
         <Text kind="small" color={c.accent} style={{ fontFamily: Fonts.semibold }}>{t('forgot')}</Text>
       </Pressable>
-      {forgot && <Notice text={t('forgot_soon')} />}
-      <Button title={t('log_in')} onPress={logIn} />
+      {notice && <Notice text={notice} />}
+      <Button title={busy ? t('loading') : t('log_in')} disabled={busy} onPress={logIn} />
       <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 4, flexWrap: 'wrap' }}>
         <Text kind="small" muted>{t('new_here')}</Text>
         <Link href="/sign-up" style={{ color: c.accent, fontFamily: Fonts.semibold, fontSize: 13 }}>

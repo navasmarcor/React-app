@@ -8,7 +8,8 @@ import { useLayout } from '@/components/use-layout';
 import { useT, type StringKey } from '@/lib/i18n';
 import { profileSteps, strengthOf } from '@/lib/progress';
 import { matches, SAMPLE_SCHOOLS, toSchool } from '@/lib/schools';
-import { slugFor, useStore } from '@/lib/store';
+import { linkSlug } from '@/lib/email';
+import { useStore } from '@/lib/store';
 import { Fonts, Radius, useTheme } from '@/lib/theme';
 
 function Ring({ pct }: { pct: number }) {
@@ -71,11 +72,11 @@ export default function Home() {
         </View>
         {wide ? (
           <Row gap={8}>
-            <Button kind="outline" title={t('view_profile')} onPress={() => router.push(`/p/${slugFor(p.name)}`)} />
+            <Button kind="outline" title={t('view_profile')} onPress={() => router.push(`/p/${linkSlug(state)}`)} />
             <Button title={t('share_link')} onPress={() => router.navigate('/email')} />
           </Row>
         ) : (
-          <Pressable onPress={() => router.push(`/p/${slugFor(p.name)}`)} accessibilityLabel={t('view_profile')}>
+          <Pressable onPress={() => router.push(`/p/${linkSlug(state)}`)} accessibilityLabel={t('view_profile')}>
             <Avatar name={p.name || firstName} uri={p.photos.track[0]} />
           </Pressable>
         )}
