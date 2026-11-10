@@ -1,0 +1,56 @@
+{
+  "expo": {
+    "name": "React App",
+    "slug": "react-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "reactapp",
+    "userInterfaceStyle": "automatic",
+    "backgroundColor": "#f3f5f8",
+    "ios": {
+      "bundleIdentifier": "com.navasmarcor.reactapp",
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "React App uses your photos so you can add track and everyday pictures to the profile coaches see.",
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "package": "com.navasmarcor.reactapp",
+      "adaptiveIcon": {
+        "backgroundColor": "#152033",
+        "foregroundImage": "./assets/images/android-icon-foreground.png",
+        "backgroundImage": "./assets/images/android-icon-background.png",
+        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "output": "single",
+      "favicon": "./assets/images/favicon.png",
+      "name": "React App"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "React App uses your photos so you can add track and everyday pictures to the profile coaches see."
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#152033",
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 120
+        }
+      ]
+    ],
+    "experiments": {
+      "reactCompiler": true
+    }
+  }
+}
