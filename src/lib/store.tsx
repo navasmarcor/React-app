@@ -40,7 +40,8 @@ export type CustomSchool = {
 
 /** 0 not sent, 1 sent, 2 replied, 3 visit, 4 offer */
 export type OutreachStatus = 0 | 1 | 2 | 3 | 4;
-export type Outreach = { status: OutreachStatus; sentAt?: string };
+/** `to` is the coach's email address the athlete entered for this school. */
+export type Outreach = { status: OutreachStatus; sentAt?: string; to?: string };
 
 export type Account = { name: string; email: string; role: 'athlete' | 'parent' };
 
