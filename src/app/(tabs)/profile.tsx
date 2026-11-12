@@ -5,10 +5,11 @@ import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 
 import { LangPicker } from '@/components/auth-shell';
+import { EventPicker } from '@/components/event-picker';
 import { Icon } from '@/components/icons';
 import { Button, Card, Choice, Field, FieldRow, Row, Screen, Text } from '@/components/ui';
 import { useT } from '@/lib/i18n';
-import { EVENT_NAMES, EVENTS, gpa4 } from '@/lib/schools';
+import { EVENTS, gpa4 } from '@/lib/schools';
 import { deletePhoto, uploadPhoto } from '@/lib/photos';
 import { useStore, type Profile } from '@/lib/store';
 import { Radius, useTheme } from '@/lib/theme';
@@ -98,7 +99,7 @@ function Photos({ kind }: { kind: 'track' | 'life' }) {
 export default function ProfileScreen() {
   const { state, sync, set, setProfile, signOut } = useStore();
   const { c } = useTheme();
-  const { t, ev } = useT();
+  const { t } = useT();
   const p = state.profile;
   const field = (k: keyof Profile) => ({
     value: String(p[k] ?? ''),
@@ -132,19 +133,14 @@ export default function ProfileScreen() {
       <Section title={t('h_athletics')}>
         {p.pbs.map((pb, i) => (
           <View key={i} style={{ gap: 10, paddingBottom: 6 }}>
-            <Choice
-              label={t('f_event')}
-              value={pb.ev}
-              onChange={(v) => setPb(i, { ev: v })}
-              options={EVENT_NAMES.map((e) => ({ value: e, label: ev(e) }))}
-            />
+            <EventPicker label={t('f_event')} value={pb.ev} onChange={(v) => setPb(i, { ev: v })} />
             <FieldRow>
               <Field
                 label={t('f_mark')}
                 mono
                 value={pb.mark}
                 onChangeText={(v) => setPb(i, { mark: v })}
-                placeholder={EVENTS[pb.ev]?.low ? '1:54.80' : '6.85'}
+                placeholder={EVENTS[pb.ev]?.hint}
                 keyboardType="numbers-and-punctuation"
               />
               <Field label={t('f_meet')} value={pb.meet} onChangeText={(v) => setPb(i, { meet: v })} />
