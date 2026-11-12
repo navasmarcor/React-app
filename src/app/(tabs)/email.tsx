@@ -3,6 +3,7 @@ import * as Linking from 'expo-linking';
 import { useState } from 'react';
 import { View } from 'react-native';
 
+import { SendAll } from '@/components/send-all';
 import { Button, Card, Choice, Field, Row, Screen, Text } from '@/components/ui';
 import { emailFor, profileUrl } from '@/lib/email';
 import { useT, type StringKey } from '@/lib/i18n';
@@ -33,7 +34,7 @@ export default function Email() {
     set({
       outreach: {
         ...state.outreach,
-        [id]: { status, sentAt: status > 0 ? prev?.sentAt ?? new Date().toISOString() : undefined },
+        [id]: { ...prev, status, sentAt: status > 0 ? prev?.sentAt ?? new Date().toISOString() : undefined },
       },
     });
   }
@@ -83,6 +84,8 @@ export default function Email() {
               <Button kind="outline" title={t('mark_sent')} onPress={() => setStatus(school.id, Math.max(1, state.outreach[school.id]?.status ?? 0) as OutreachStatus)} />
             </Row>
           </Card>
+
+          <SendAll schools={schools} url={url} />
 
           <Card>
             <Text kind="label">{t('tracker')}</Text>
