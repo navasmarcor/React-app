@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { View } from 'react-native';
 
+import { EventPicker } from '@/components/event-picker';
 import { Badge, Button, Card, Choice, Field, FieldRow, Row, Screen, Text } from '@/components/ui';
 import { useT, type StringKey } from '@/lib/i18n';
-import { compare, EVENT_NAMES, formatMark, matches, scoreSchool, tierOf, toSchool, type Region, type School, type SchoolType, type Score, type Tier } from '@/lib/schools';
+import { compare, EVENTS, formatMark, matches, scoreSchool, tierOf, toSchool, type Region, type School, type SchoolType, type Score, type Tier } from '@/lib/schools';
 import { useStore } from '@/lib/store';
 import { Fonts, useTheme } from '@/lib/theme';
 
@@ -57,7 +58,7 @@ function SchoolRow({ school, score, onRemove }: { school: School; score: Score |
 
 function AddSchool() {
   const { state, set } = useStore();
-  const { t, ev } = useT();
+  const { t } = useT();
   const [name, setName] = useState('');
   const [type, setType] = useState<SchoolType>('college');
   const [region, setRegion] = useState<Region>('Northeast');
@@ -84,8 +85,8 @@ function AddSchool() {
       </FieldRow>
       <Choice label={t('f_stype')} value={type} onChange={setType} options={[{ value: 'college', label: t('type_c') }, { value: 'boarding', label: t('type_b') }]} />
       <Choice label={t('f_region')} value={region} onChange={setRegion} options={(['Northeast', 'South', 'Midwest', 'West'] as const).map((r) => ({ value: r, label: r }))} />
-      <Choice label={t('f_event')} value={event} onChange={setEvent} options={EVENT_NAMES.map((e) => ({ value: e, label: ev(e) }))} />
-      <Field label={t('f_smark')} value={mark} onChangeText={setMark} placeholder="1:55.00" mono keyboardType="numbers-and-punctuation" />
+      <EventPicker label={t('f_event')} value={event} onChange={setEvent} />
+      <Field label={t('f_smark')} value={mark} onChangeText={setMark} placeholder={EVENTS[event]?.hint} mono keyboardType="numbers-and-punctuation" />
       <Button title={`+ ${t('add_btn')}`} onPress={add} style={{ alignSelf: 'flex-start' }} />
     </Card>
   );

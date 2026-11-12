@@ -1,15 +1,52 @@
 import type { Profile, CustomSchool } from './store';
 
-/** Lower is better for timed events, higher is better for jumps. */
-export const EVENTS: Record<string, { low: boolean }> = {
-  '100m': { low: true },
-  '400m': { low: true },
-  '800m': { low: true },
-  '1500m': { low: true },
-  'Long jump': { low: false },
-  'High jump': { low: false },
+export type EventGroup = 'sprints' | 'hurdles' | 'distance' | 'jumps' | 'throws' | 'combined';
+export type EventUnit = 'time' | 'm' | 'pts';
+type EventDef = { group: EventGroup; unit: EventUnit; low: boolean; hint: string };
+
+const ev = (group: EventGroup, unit: EventUnit, hint: string): EventDef => ({ group, unit, low: unit === 'time', hint });
+
+/**
+ * Every track and field event an athlete can list. Times are lower-is-better; distances and
+ * combined-event points are higher-is-better. Keys are stored in saved profiles, so never rename one.
+ */
+export const EVENTS: Record<string, EventDef> = {
+  '60m': ev('sprints', 'time', '6.95'),
+  '100m': ev('sprints', 'time', '10.85'),
+  '200m': ev('sprints', 'time', '21.90'),
+  '300m': ev('sprints', 'time', '35.20'),
+  '400m': ev('sprints', 'time', '48.60'),
+  '60m hurdles': ev('hurdles', 'time', '8.20'),
+  '100m hurdles': ev('hurdles', 'time', '14.10'),
+  '110m hurdles': ev('hurdles', 'time', '14.50'),
+  '300m hurdles': ev('hurdles', 'time', '38.80'),
+  '400m hurdles': ev('hurdles', 'time', '53.80'),
+  '800m': ev('distance', 'time', '1:54.80'),
+  '1500m': ev('distance', 'time', '3:58.00'),
+  '1600m': ev('distance', 'time', '4:13.00'),
+  Mile: ev('distance', 'time', '4:15.00'),
+  '3000m': ev('distance', 'time', '8:35.00'),
+  '3200m': ev('distance', 'time', '9:20.00'),
+  '5000m': ev('distance', 'time', '15:00.00'),
+  '10,000m': ev('distance', 'time', '31:10.00'),
+  '2000m steeplechase': ev('distance', 'time', '6:08.00'),
+  '3000m steeplechase': ev('distance', 'time', '9:25.00'),
+  '5K cross country': ev('distance', 'time', '15:50.00'),
+  '5000m race walk': ev('distance', 'time', '22:00.00'),
+  'High jump': ev('jumps', 'm', '2.04'),
+  'Pole vault': ev('jumps', 'm', '4.60'),
+  'Long jump': ev('jumps', 'm', '7.10'),
+  'Triple jump': ev('jumps', 'm', '14.70'),
+  'Shot put': ev('throws', 'm', '15.80'),
+  Discus: ev('throws', 'm', '48.00'),
+  Javelin: ev('throws', 'm', '57.00'),
+  Hammer: ev('throws', 'm', '52.00'),
+  Pentathlon: ev('combined', 'pts', '3500'),
+  Heptathlon: ev('combined', 'pts', '4600'),
+  Decathlon: ev('combined', 'pts', '6300'),
 };
 export const EVENT_NAMES = Object.keys(EVENTS);
+export const EVENT_GROUPS: EventGroup[] = ['sprints', 'hurdles', 'distance', 'jumps', 'throws', 'combined'];
 
 export type SchoolType = 'college' | 'boarding';
 export type Region = 'Northeast' | 'South' | 'Midwest' | 'West';
@@ -29,8 +66,8 @@ export type School = {
   custom?: boolean;
 };
 
-/** Sample schools with made-up standards, used until the real school database exists. */
-export const SAMPLE_SCHOOLS: School[] = [
+/** The sample schools' own standards for the original six events. */
+const BASE_SCHOOLS: School[] = [
   { id: 'northfield', name: 'Northfield State University', type: 'college', division: 'NCAA D1', region: 'Midwest', gpa: 3.3, scholarship: 'full', std: { '100m': [10.55, 10.85, 11.1], '400m': [47.2, 48.6, 50], '800m': [110.5, 113, 116], '1500m': [228, 234, 242], 'Long jump': [7.45, 7.1, 6.8], 'High jump': [2.12, 2.04, 1.98] } },
   { id: 'bayview', name: 'Bayview College', type: 'college', division: 'NCAA D2', region: 'West', gpa: 3.0, scholarship: 'part', std: { '100m': [10.8, 11.05, 11.3], '400m': [48.4, 49.8, 51.5], '800m': [113, 116, 120], '1500m': [234, 242, 250], 'Long jump': [7.1, 6.8, 6.5], 'High jump': [2.03, 1.96, 1.9] } },
   { id: 'granite', name: 'Granite Ridge University', type: 'college', division: 'NCAA D1', region: 'Northeast', gpa: 3.6, scholarship: 'full', std: { '100m': [10.45, 10.75, 11], '400m': [46.8, 48.2, 49.6], '800m': [109.5, 112, 115], '1500m': [226, 232, 240], 'Long jump': [7.55, 7.2, 6.9], 'High jump': [2.15, 2.07, 2] } },
@@ -44,23 +81,88 @@ export const SAMPLE_SCHOOLS: School[] = [
   { id: 'ambrose', name: 'St. Ambrose School', type: 'boarding', division: 'Boarding, grades 9 to 12', region: 'South', gpa: 3.7, scholarship: 'fin', std: { '100m': [11, 11.3, 11.7], '400m': [49.8, 51.5, 53.5], '800m': [116, 120, 124], '1500m': [240, 250, 260], 'Long jump': [6.8, 6.5, 6.1], 'High jump': [1.94, 1.87, 1.8] } },
 ];
 
+/**
+ * Standards at a mid-level NCAA D1 program for the events the sample schools above don't list.
+ * Each sample school's standards are scaled from these by how fast its 100m recruit mark is,
+ * so the whole list stays consistent until real school data replaces it.
+ */
+const REFERENCE: Record<string, [number, number, number]> = {
+  '60m': [6.75, 6.92, 7.08],
+  '200m': [21.1, 21.7, 22.3],
+  '300m': [34, 35, 36.2],
+  '60m hurdles': [7.95, 8.2, 8.5],
+  '100m hurdles': [13.6, 14.1, 14.6],
+  '110m hurdles': [14, 14.5, 15],
+  '300m hurdles': [37.5, 38.8, 40.2],
+  '400m hurdles': [52, 53.8, 55.6],
+  '1600m': [246, 253, 262],
+  Mile: [248, 255, 264],
+  '3000m': [500, 515, 535],
+  '3200m': [545, 560, 580],
+  '5000m': [870, 900, 935],
+  '10,000m': [1810, 1870, 1940],
+  '2000m steeplechase': [355, 368, 384],
+  '3000m steeplechase': [545, 565, 590],
+  '5K cross country': [920, 950, 990],
+  '5000m race walk': [1260, 1320, 1400],
+  'Pole vault': [4.9, 4.6, 4.3],
+  'Triple jump': [15.3, 14.7, 14.1],
+  'Shot put': [17, 15.8, 14.6],
+  Discus: [52, 48, 44],
+  Javelin: [62, 57, 52],
+  Hammer: [58, 52, 46],
+  Pentathlon: [3800, 3500, 3200],
+  Heptathlon: [5000, 4600, 4200],
+  Decathlon: [6800, 6300, 5800],
+};
+const REFERENCE_100M = 10.85;
+const round = (x: number, d: number) => Math.round(x * 10 ** d) / 10 ** d;
+
+/** Sample schools with made-up standards, used until the real school database exists. */
+export const SAMPLE_SCHOOLS: School[] = BASE_SCHOOLS.map((s) => {
+  const f = (s.std['100m']?.[1] ?? REFERENCE_100M) / REFERENCE_100M;
+  const std = { ...s.std };
+  for (const [name, marks] of Object.entries(REFERENCE)) {
+    if (std[name]) continue;
+    const { unit } = EVENTS[name];
+    std[name] = marks.map((m) => (unit === 'time' ? round(m * f, 2) : unit === 'm' ? round(m / f ** 2, 2) : Math.round(m / f ** 2))) as [number, number, number];
+  }
+  return { ...s, std };
+});
+
 export function parseMark(ev: string, s: string): number {
-  const v = String(s ?? '').trim().replace(',', '.');
-  if (!v || !EVENTS[ev]) return NaN;
-  if (EVENTS[ev].low && v.includes(':')) {
-    const [m, r] = v.split(':');
-    return Number(m) * 60 + Number(r);
+  const raw = String(s ?? '').trim();
+  const def = EVENTS[ev];
+  if (!raw || !def) return NaN;
+  // Points are whole numbers, so "6,450" and "6.450" both mean 6450.
+  if (def.unit === 'pts') return parseInt(raw.replace(/\D/g, ''), 10);
+  const v = raw.replace(',', '.');
+  if (def.low && v.includes(':')) {
+    const parts = v.split(':').map(Number);
+    return parts.reduce((acc, x) => acc * 60 + x, 0);
   }
   return parseFloat(v);
 }
 
 export function formatMark(ev: string, v: number): string {
-  if (!EVENTS[ev]?.low) return `${v.toFixed(2)} m`;
+  const def = EVENTS[ev];
+  if (def?.unit === 'pts') return `${Math.round(v)} pts`;
+  if (!def?.low) return `${v.toFixed(2)} m`;
+  if (v >= 3600) {
+    const h = Math.floor(v / 3600);
+    const m = Math.floor((v - h * 3600) / 60);
+    return `${h}:${String(m).padStart(2, '0')}:${(v - h * 3600 - m * 60).toFixed(2).padStart(5, '0')}`;
+  }
   if (v >= 60) {
     const m = Math.floor(v / 60);
     return `${m}:${(v - m * 60).toFixed(2).padStart(5, '0')}`;
   }
   return v.toFixed(2);
+}
+
+/** The mark as an athlete would type it: no unit after it. */
+export function markInput(ev: string, v: number): string {
+  return formatMark(ev, v).replace(/ (m|pts)$/, '');
 }
 
 /** Converts the athlete's grade to the U.S. 4.0 scale. */
@@ -184,7 +286,7 @@ export function adviceTips(p: Profile): Tip[] {
       .sort((a, b) => (low ? b - a : a - b))
       .slice(0, 3);
     for (const m of marks) {
-      const pbs = p.pbs.map((x, j) => (j === i ? { ...x, mark: formatMark(pb.ev, m).replace(' m', '') } : x));
+      const pbs = p.pbs.map((x, j) => (j === i ? { ...x, mark: markInput(pb.ev, m) } : x));
       const gained = changed(matches(p, { pbs }));
       if (gained.length) {
         const reached = SAMPLE_SCHOOLS.filter((s) => {
