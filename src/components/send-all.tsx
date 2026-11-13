@@ -13,7 +13,8 @@ import { Radius, useTheme } from '@/lib/theme';
 type Step = 'pick' | 'confirm' | 'sending';
 
 /**
- * The athlete enters each coach's address, ticks the schools, approves the whole list once,
+ * Each school's coach address is filled in from the school list (the athlete can change it),
+ * the athlete ticks the schools, approves the whole list once,
  * and the app sends every email for them.
  */
 export function SendAll({ schools, url }: { schools: School[]; url: string }) {
@@ -27,7 +28,7 @@ export function SendAll({ schools, url }: { schools: School[]; url: string }) {
 
   const p = state.profile;
   const canSend = !!state.userId && !state.demo;
-  const toOf = (id: string) => state.outreach[id]?.to ?? '';
+  const toOf = (id: string) => state.outreach[id]?.to ?? schools.find((s) => s.id === id)?.coach?.email ?? '';
   const sentAlready = (id: string) => (state.outreach[id]?.status ?? 0) > 0;
   const chosen = schools.filter((s) => !sentAlready(s.id) && !off.has(s.id) && isEmail(toOf(s.id)));
 
@@ -53,7 +54,7 @@ export function SendAll({ schools, url }: { schools: School[]; url: string }) {
   async function send() {
     setStep('sending');
     setNote(null);
-    const items = chosen.map((s) => ({ schoolId: s.id, to: toOf(s.id).trim(), ...emailFor(s, p, url) }));
+    const items = chosen.map((s) => ({ schoolId: s.id, to: toOf(s.id).trim(), ...emailFor(s, p, url, toOf(s.id).trim()) }));
     const out = await sendCoachEmails(items);
     setStep('pick');
     if ('error' in out) {

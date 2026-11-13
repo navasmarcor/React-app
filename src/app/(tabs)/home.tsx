@@ -7,7 +7,7 @@ import { Avatar, Badge, Button, Card, Row, Screen, Text } from '@/components/ui'
 import { useLayout } from '@/components/use-layout';
 import { useT, type StringKey } from '@/lib/i18n';
 import { profileSteps, strengthOf } from '@/lib/progress';
-import { matches, SAMPLE_SCHOOLS, toSchool } from '@/lib/schools';
+import { matches, SCHOOLS, toSchool } from '@/lib/schools';
 import { linkSlug } from '@/lib/email';
 import { useStore } from '@/lib/store';
 import { Fonts, Radius, useTheme } from '@/lib/theme';
@@ -51,7 +51,7 @@ export default function Home() {
   const firstName = (p.name || state.account?.name || '').split(' ')[0];
   const today = new Date().toLocaleDateString(lang, { weekday: 'long', day: 'numeric', month: 'long' });
 
-  const allSchools = [...state.custom.map(toSchool), ...SAMPLE_SCHOOLS];
+  const allSchools = [...state.custom.map(toSchool), ...SCHOOLS];
   const sent = Object.entries(state.outreach)
     .filter(([, o]) => o.status > 0)
     .map(([id, o]) => ({ school: allSchools.find((s) => s.id === id), o }))

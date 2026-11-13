@@ -1,3 +1,4 @@
+import { REAL_SCHOOLS } from './school-data';
 import type { Profile, CustomSchool } from './store';
 
 export type EventGroup = 'sprints' | 'hurdles' | 'distance' | 'jumps' | 'throws' | 'combined';
@@ -64,37 +65,39 @@ export type School = {
   /** [scholarship, recruit, walk-on] standards per event */
   std: Partial<Record<string, [number, number, number]>>;
   custom?: boolean;
+  /** Who the app emails at this school. */
+  coach?: Coach;
 };
 
-/** The sample schools' own standards for the original six events. */
-const BASE_SCHOOLS: School[] = [
-  { id: 'northfield', name: 'Northfield State University', type: 'college', division: 'NCAA D1', region: 'Midwest', gpa: 3.3, scholarship: 'full', std: { '100m': [10.55, 10.85, 11.1], '400m': [47.2, 48.6, 50], '800m': [110.5, 113, 116], '1500m': [228, 234, 242], 'Long jump': [7.45, 7.1, 6.8], 'High jump': [2.12, 2.04, 1.98] } },
-  { id: 'bayview', name: 'Bayview College', type: 'college', division: 'NCAA D2', region: 'West', gpa: 3.0, scholarship: 'part', std: { '100m': [10.8, 11.05, 11.3], '400m': [48.4, 49.8, 51.5], '800m': [113, 116, 120], '1500m': [234, 242, 250], 'Long jump': [7.1, 6.8, 6.5], 'High jump': [2.03, 1.96, 1.9] } },
-  { id: 'granite', name: 'Granite Ridge University', type: 'college', division: 'NCAA D1', region: 'Northeast', gpa: 3.6, scholarship: 'full', std: { '100m': [10.45, 10.75, 11], '400m': [46.8, 48.2, 49.6], '800m': [109.5, 112, 115], '1500m': [226, 232, 240], 'Long jump': [7.55, 7.2, 6.9], 'High jump': [2.15, 2.07, 2] } },
-  { id: 'cedar', name: 'Cedar Plains College', type: 'college', division: 'NAIA', region: 'South', gpa: 2.8, scholarship: 'part', std: { '100m': [10.95, 11.2, 11.5], '400m': [49, 50.5, 52.5], '800m': [115, 118, 122], '1500m': [238, 246, 256], 'Long jump': [6.95, 6.6, 6.3], 'High jump': [1.98, 1.92, 1.85] } },
-  { id: 'lakeshore', name: 'Lakeshore Tech', type: 'college', division: 'NCAA D3', region: 'Midwest', gpa: 3.5, scholarship: 'fin', std: { '100m': [11, 11.2, 11.45], '400m': [49.5, 50.8, 52.5], '800m': [116, 118.5, 122], '1500m': [240, 247, 255], 'Long jump': [6.8, 6.55, 6.3], 'High jump': [1.95, 1.9, 1.85] } },
-  { id: 'sierra', name: 'Sierra Vista Community College', type: 'college', division: 'NJCAA', region: 'West', gpa: 2.5, scholarship: 'full', std: { '100m': [10.9, 11.15, 11.4], '400m': [48.8, 50.2, 52], '800m': [114, 117, 121], '1500m': [236, 244, 252], 'Long jump': [7, 6.7, 6.4], 'High jump': [2, 1.94, 1.88] } },
-  { id: 'atlantic', name: 'Atlantic Coast University', type: 'college', division: 'NCAA D1', region: 'South', gpa: 3.2, scholarship: 'full', std: { '100m': [10.5, 10.8, 11.05], '400m': [47, 48.4, 49.8], '800m': [110, 112.5, 115.5], '1500m': [227, 233, 241], 'Long jump': [7.5, 7.15, 6.85], 'High jump': [2.13, 2.05, 1.99] } },
-  { id: 'hollis', name: 'Hollis Academy', type: 'boarding', division: 'Boarding, grades 9 to 12', region: 'Northeast', gpa: 3.4, scholarship: 'fin', std: { '100m': [11.1, 11.4, 11.8], '400m': [50, 52, 54], '800m': [117, 121, 126], '1500m': [242, 252, 262], 'Long jump': [6.7, 6.4, 6], 'High jump': [1.92, 1.85, 1.78] } },
-  { id: 'pinecrest', name: 'Pinecrest School', type: 'boarding', division: 'Boarding, grades 9 to 12, PG', region: 'Northeast', gpa: 3.1, scholarship: 'fin', std: { '100m': [11.2, 11.5, 11.9], '400m': [50.5, 52.5, 55], '800m': [118, 122, 127], '1500m': [245, 255, 266], 'Long jump': [6.6, 6.3, 5.9], 'High jump': [1.9, 1.83, 1.75] } },
-  { id: 'desert', name: 'Desert Mesa Prep', type: 'boarding', division: 'Boarding, grades 9 to 12', region: 'West', gpa: 2.9, scholarship: 'part', std: { '100m': [11.3, 11.6, 12], '400m': [51, 53, 56], '800m': [119, 123.5, 128], '1500m': [248, 258, 270], 'Long jump': [6.5, 6.2, 5.8], 'High jump': [1.88, 1.8, 1.72] } },
-  { id: 'ambrose', name: 'St. Ambrose School', type: 'boarding', division: 'Boarding, grades 9 to 12', region: 'South', gpa: 3.7, scholarship: 'fin', std: { '100m': [11, 11.3, 11.7], '400m': [49.8, 51.5, 53.5], '800m': [116, 120, 124], '1500m': [240, 250, 260], 'Long jump': [6.8, 6.5, 6.1], 'High jump': [1.94, 1.87, 1.8] } },
-];
+export type Coach = { name: string; title: string; email: string; /** false for a shared office address */ person: boolean };
+
+/** A school from the real list, before its standards are filled in. */
+export type RealSchool = Omit<School, 'std' | 'custom'> & {
+  state: string;
+  coach: Coach;
+  /** The official page the coach contact was copied from. */
+  source: string;
+  /** The staff year that page shows. */
+  season?: string;
+};
 
 /**
- * Standards at a mid-level NCAA D1 program for the events the sample schools above don't list.
- * Each sample school's standards are scaled from these by how fast its 100m recruit mark is,
- * so the whole list stays consistent until real school data replaces it.
+ * Estimated standards at a mid-level NCAA D1 program: [scholarship, recruit, walk-on] per event.
+ * These are not any school's published numbers.
  */
-const REFERENCE: Record<string, [number, number, number]> = {
+const D1_REFERENCE: Record<string, [number, number, number]> = {
   '60m': [6.75, 6.92, 7.08],
+  '100m': [10.55, 10.85, 11.1],
   '200m': [21.1, 21.7, 22.3],
   '300m': [34, 35, 36.2],
+  '400m': [47.2, 48.6, 50],
   '60m hurdles': [7.95, 8.2, 8.5],
   '100m hurdles': [13.6, 14.1, 14.6],
   '110m hurdles': [14, 14.5, 15],
   '300m hurdles': [37.5, 38.8, 40.2],
   '400m hurdles': [52, 53.8, 55.6],
+  '800m': [110.5, 113, 116],
+  '1500m': [228, 234, 242],
   '1600m': [246, 253, 262],
   Mile: [248, 255, 264],
   '3000m': [500, 515, 535],
@@ -105,7 +108,9 @@ const REFERENCE: Record<string, [number, number, number]> = {
   '3000m steeplechase': [545, 565, 590],
   '5K cross country': [920, 950, 990],
   '5000m race walk': [1260, 1320, 1400],
+  'High jump': [2.12, 2.04, 1.98],
   'Pole vault': [4.9, 4.6, 4.3],
+  'Long jump': [7.45, 7.1, 6.8],
   'Triple jump': [15.3, 14.7, 14.1],
   'Shot put': [17, 15.8, 14.6],
   Discus: [52, 48, 44],
@@ -115,20 +120,24 @@ const REFERENCE: Record<string, [number, number, number]> = {
   Heptathlon: [5000, 4600, 4200],
   Decathlon: [6800, 6300, 5800],
 };
-const REFERENCE_100M = 10.85;
+
+/** How much slower a level's marks are than D1 (times are multiplied, distances and points divided by its square). */
+const LEVEL_FACTOR: Record<string, number> = { 'NCAA D1': 1, 'NCAA D2': 1.025, NAIA: 1.03, NJCAA: 1.03, 'NCAA D3': 1.045, 'Boarding school': 1.08 };
 const round = (x: number, d: number) => Math.round(x * 10 ** d) / 10 ** d;
 
-/** Sample schools with made-up standards, used until the real school database exists. */
-export const SAMPLE_SCHOOLS: School[] = BASE_SCHOOLS.map((s) => {
-  const f = (s.std['100m']?.[1] ?? REFERENCE_100M) / REFERENCE_100M;
-  const std = { ...s.std };
-  for (const [name, marks] of Object.entries(REFERENCE)) {
-    if (std[name]) continue;
+/** Estimated standards for every event at a given level. */
+export function standardsFor(division: string): School['std'] {
+  const f = LEVEL_FACTOR[division] ?? 1;
+  const std: School['std'] = {};
+  for (const [name, marks] of Object.entries(D1_REFERENCE)) {
     const { unit } = EVENTS[name];
     std[name] = marks.map((m) => (unit === 'time' ? round(m * f, 2) : unit === 'm' ? round(m / f ** 2, 2) : Math.round(m / f ** 2))) as [number, number, number];
   }
-  return { ...s, std };
-});
+  return std;
+}
+
+/** The real schools, each with its coach contact and estimated standards for its level. */
+export const SCHOOLS: School[] = REAL_SCHOOLS.map((s) => ({ ...s, std: standardsFor(s.division) }));
 
 export function parseMark(ev: string, s: string): number {
   const raw = String(s ?? '').trim();
@@ -231,7 +240,7 @@ export function tierOf(x: number): Tier | null {
 export type Match = { school: School; score: Score; tier: Tier };
 
 export function matches(p: Profile, ov: Overrides = {}): Match[] {
-  return SAMPLE_SCHOOLS.map((school) => ({ school, score: scoreSchool(school, p, ov) }))
+  return SCHOOLS.map((school) => ({ school, score: scoreSchool(school, p, ov) }))
     .filter((x): x is { school: School; score: Score } => !!x.score && !!tierOf(x.score.total))
     .map((x) => ({ ...x, tier: tierOf(x.score.total)! }))
     .sort((a, b) => b.score.total - a.score.total);
@@ -282,14 +291,14 @@ export function adviceTips(p: Profile): Tip[] {
     const v = parseMark(pb.ev, pb.mark);
     if (isNaN(v)) return;
     const low = EVENTS[pb.ev].low;
-    const marks = [...new Set(SAMPLE_SCHOOLS.map((s) => s.std[pb.ev]?.[1]).filter((m): m is number => m != null && (low ? m < v : m > v)))]
+    const marks = [...new Set(SCHOOLS.map((s) => s.std[pb.ev]?.[1]).filter((m): m is number => m != null && (low ? m < v : m > v)))]
       .sort((a, b) => (low ? b - a : a - b))
       .slice(0, 3);
     for (const m of marks) {
       const pbs = p.pbs.map((x, j) => (j === i ? { ...x, mark: markInput(pb.ev, m) } : x));
       const gained = changed(matches(p, { pbs }));
       if (gained.length) {
-        const reached = SAMPLE_SCHOOLS.filter((s) => {
+        const reached = SCHOOLS.filter((s) => {
           const r = s.std[pb.ev]?.[1];
           return r != null && (low ? m <= r && v > r : m >= r && v < r);
         }).map((s) => s.name);
