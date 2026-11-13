@@ -8,3 +8,9 @@ export const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_AGpaGV50BDGru-hciiGHBQ_j
 
 /** Where the web version of the app lives. Coach links point here. */
 export const SITE_URL = 'https://navasmarcor.github.io/React-app';
+
+/**
+ * The address (slug) of the Supabase Edge Function that sends coach emails, as shown in its URL
+ * under Supabase > Edge Functions. Its display name there is send-coach-emails.
+ */
+export const SEND_FUNCTION = 'clever-endpoint';

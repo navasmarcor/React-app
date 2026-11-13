@@ -1,5 +1,6 @@
 import { FunctionsHttpError } from '@supabase/supabase-js';
 
+import { SEND_FUNCTION } from './config';
 import { supabase } from './supabase';
 
 export type SendItem = { schoolId: string; to: string; subject: string; body: string };
@@ -10,7 +11,7 @@ export const isEmail = (s: string) => /^[^\s@<>,;]+@[^\s@<>,;]+\.[^\s@<>,;]+$/.t
 
 /** Asks the server to send the approved coach emails. The server sends them from the app's address. */
 export async function sendCoachEmails(emails: SendItem[]): Promise<{ results: SendResult[] } | { error: SendError; left?: number }> {
-  const { data, error } = await supabase.functions.invoke('send-coach-emails', { body: { emails } });
+  const { data, error } = await supabase.functions.invoke(SEND_FUNCTION, { body: { emails } });
   if (!error) return { results: (data as { results: SendResult[] }).results };
   if (error instanceof FunctionsHttpError) {
     const out = await error.context.json().catch(() => ({}));
