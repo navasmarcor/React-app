@@ -18,10 +18,13 @@ export default function Email() {
   const p = state.profile;
   const schools = [...state.custom.map(toSchool), ...matches(p).map((m) => m.school)].slice(0, 10);
   const [schoolId, setSchoolId] = useState(schools[0]?.id ?? '');
-  const [to, setTo] = useState('');
+  const [typed, setTyped] = useState<{ id: string; to: string } | null>(null);
   const [copied, setCopied] = useState<'link' | 'email' | null>(null);
   const school = schools.find((s) => s.id === schoolId) ?? schools[0];
   const url = profileUrl(state);
+  // The school's coach address, unless the athlete typed a different one for this school.
+  const to = typed && typed.id === school?.id ? typed.to : (school?.coach?.email ?? '');
+  const setTo = (v: string) => setTyped({ id: school?.id ?? '', to: v });
 
   async function copy(text: string, what: 'link' | 'email') {
     await Clipboard.setStringAsync(text);
@@ -39,7 +42,7 @@ export default function Email() {
     });
   }
 
-  const mail = school ? emailFor(school, p, url) : null;
+  const mail = school ? emailFor(school, p, url, to.trim()) : null;
 
   return (
     <Screen>

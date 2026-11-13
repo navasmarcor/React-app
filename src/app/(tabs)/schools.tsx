@@ -42,6 +42,9 @@ function SchoolRow({ school, score, onRemove }: { school: School; score: Score |
           {school.custom ? '' : ` · ${t(schol[school.scholarship])}`}
         </Text>
         <Text kind="small" style={{ fontSize: 14 }}>{why()}</Text>
+        {school.coach?.person && (
+          <Text kind="small" muted>{t('coach_line', { name: school.coach.name, title: school.coach.title })}</Text>
+        )}
         {score && (
           <View style={{ height: 6, backgroundColor: c.chip, borderRadius: 3, overflow: 'hidden', maxWidth: 260, marginTop: 4 }}>
             <View style={{ width: `${score.total}%`, height: '100%', backgroundColor: c.accent }} />
