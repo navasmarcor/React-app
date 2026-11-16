@@ -2,12 +2,13 @@ import { ArchivoBlack_400Regular } from '@expo-google-fonts/archivo-black';
 import { Archivo_400Regular, Archivo_500Medium, Archivo_600SemiBold, Archivo_700Bold } from '@expo-google-fonts/archivo';
 import { JetBrainsMono_500Medium } from '@expo-google-fonts/jetbrains-mono';
 import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
+import { Stack, usePathname } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { Intro } from '@/components/intro';
 import { StoreProvider, useStore } from '@/lib/store';
 import { ThemeProvider, useTheme } from '@/lib/theme';
 
@@ -43,6 +44,8 @@ function Root({ ready }: { ready: boolean }) {
     JetBrainsMono_500Medium,
   });
   const loaded = ready && (fontsLoaded || !!fontError);
+  // Coaches opening an athlete's profile link go straight to it, without the opening animation.
+  const isCoachLink = usePathname().startsWith('/p/');
 
   useEffect(() => {
     if (loaded) SplashScreen.hideAsync().catch(() => {});
@@ -53,7 +56,13 @@ function Root({ ready }: { ready: boolean }) {
   return (
     <>
       <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
-      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.bg } }} />
+      {isCoachLink ? (
+        <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.bg } }} />
+      ) : (
+        <Intro>
+          <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.bg } }} />
+        </Intro>
+      )}
     </>
   );
 }
